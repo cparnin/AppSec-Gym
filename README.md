@@ -2,9 +2,8 @@
 
 > **Interactive CLI training gym for application security vulnerabilities**
 > 
-> *Think "Rustlings for Security" - hands-on practice fixing real vulnerabilities*
+> *Hands-on practice fixing real security vulnerabilities through interactive challenges*
 
-[![NPM Version](https://img.shields.io/npm/v/appsec-gym.svg)](https://www.npmjs.com/package/appsec-gym)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
