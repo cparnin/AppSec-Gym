@@ -1,13 +1,14 @@
 <div align="center">
 <img width="500" height="500" alt="AppSecGym" src="https://github.com/user-attachments/assets/e62adbd4-7656-48c3-b40d-236a72010afc" />
-</div>
 
-> **Interactive CLI training gym for application security vulnerabilities**
-> 
-> *Hands-on practice fixing real security vulnerabilities through interactive challenges*
+**Interactive CLI training gym for application security vulnerabilities**
+
+*Hands-on practice fixing real security vulnerabilities through interactive challenges*
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+</div>
 
 ## What is AppSec Gym?
 
