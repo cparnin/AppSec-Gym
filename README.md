@@ -1,3 +1,6 @@
+
+<img width="500" height="500" alt="AppSecGym" src="https://github.com/user-attachments/assets/e62adbd4-7656-48c3-b40d-236a72010afc" />
+
 # 🏋️ AppSec Gym
 
 > **Interactive CLI training gym for application security vulnerabilities**
