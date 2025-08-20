@@ -20,22 +20,18 @@ AppSec Gym is a **command-line training platform** where developers practice ide
 ## Quick Start
 
 ```bash
-# Install globally
-npm install -g appsec-gym
+# Clone and test locally
+git clone https://github.com/cparnin/AppSec-Gym.git
+cd AppSec-Gym/cli
+npm install
+node src/index.js --help
 
-# Start training
-appsec-gym warmup
-
-# Focus on specific vulnerabilities  
-appsec-gym workout sql
-appsec-gym workout xss
-
-# Check your solution
-appsec-gym check
-
-# Track progress
-appsec-gym progress
+# Test available commands
+node src/index.js warmup
+node src/index.js workout sql
 ```
+
+*Note: npm package will be available once challenges are implemented*
 
 ## Current Status
 
