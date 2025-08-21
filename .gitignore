@@ -57,3 +57,6 @@ temp/
 # Challenge user solutions (don't commit)
 challenges/*/solution/
 challenges/*/user_code/
+
+# Private project notes
+CLAUDE.md
