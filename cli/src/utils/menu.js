@@ -17,7 +17,13 @@ class InteractiveMenu {
     if (currentChallenge) {
       console.log(chalk.cyan(`Current Challenge: ${currentChallenge.title}`));
       console.log(chalk.gray(`Category: ${currentChallenge.category} | Difficulty: ${currentChallenge.difficulty}`));
-      console.log(chalk.yellow(`Status: ${currentChallenge.status || 'Not started'}\n`));
+      console.log(chalk.yellow(`Status: ${currentChallenge.status || 'Not started'}`));
+      
+      if (currentChallenge.filePath) {
+        console.log(chalk.white(`\n📝 File to edit: ${currentChallenge.filePath}\n`));
+      } else {
+        console.log();
+      }
     } else {
       console.log(chalk.gray('No challenge selected\n'));
     }
@@ -43,6 +49,7 @@ class InteractiveMenu {
     if (currentChallenge) {
       if (currentChallenge.status === 'in_progress') {
         choices.push(
+          { name: chalk.cyan('📝 Open file in editor'), value: 'open-editor' },
           { name: chalk.green('Check your solution'), value: 'check' },
           { name: chalk.yellow('Get a hint'), value: 'hint' },
           { name: chalk.blue('Show challenge again'), value: 'show' },

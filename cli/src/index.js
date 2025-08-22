@@ -202,6 +202,42 @@ program
 
 // Interactive mode
 async function runInteractiveMode() {
+  // First-run setup: Configure editor
+  if (!editorLauncher.preferredEditor) {
+    console.clear();
+    console.log(chalk.cyan('🎯 Welcome to AppSec Gym!\n'));
+    console.log(chalk.white('Let\'s set up your preferred editor first.\n'));
+    
+    const availableEditors = await editorLauncher.detectAvailableEditors();
+    if (availableEditors.length > 0) {
+      const inquirer = require('inquirer');
+      const { editor } = await inquirer.prompt([
+        {
+          type: 'list',
+          name: 'editor',
+          message: 'Which editor would you like to use?',
+          choices: [
+            ...availableEditors.map(e => ({ 
+              name: `${e.name}`, 
+              value: e.command 
+            })),
+            new inquirer.Separator(),
+            { name: 'I\'ll open files manually', value: 'manual' }
+          ]
+        }
+      ]);
+      
+      if (editor && editor !== 'manual') {
+        editorLauncher.savePreferredEditor(editor);
+        console.log(chalk.green(`\n✅ Great! We'll use ${editor} to open challenge files.\n`));
+      } else {
+        console.log(chalk.yellow('\n📝 No problem! We\'ll show you the file paths to open manually.\n'));
+      }
+      
+      await menu.pauseForUser('Press Enter to start training...');
+    }
+  }
+  
   let running = true;
   
   while (running) {
@@ -209,6 +245,18 @@ async function runInteractiveMode() {
       const action = await menu.showMainMenu();
       
       switch (action) {
+        case 'open-editor':
+          const currentForEdit = challengeManager.getCurrentChallenge();
+          if (currentForEdit && currentForEdit.filePath) {
+            const opened = await editorLauncher.openFile(currentForEdit.filePath);
+            if (!opened) {
+              console.log(chalk.yellow('\nCopy this command to open the file:'));
+              console.log(chalk.white(`  ${editorLauncher.getOpenCommand(currentForEdit.filePath)}\n`));
+              await menu.pauseForUser();
+            }
+          }
+          break;
+          
         case 'start':
         case 'start-beginner':
           const current = challengeManager.getCurrentChallenge();
