@@ -20,12 +20,27 @@ AppSec Gym is a **command-line training game** where you practice fixing real se
 - **Learn by doing** - Fix the vulnerability, run tests, see if you got it right
 - **Community challenges via GitHub** - Anyone can contribute new vulnerabilities
 
-## How It Works
+## Quick Start
 
 ```bash
-# Just run with no arguments for interactive mode:
-$ appsec-gym
+# Clone and install
+git clone https://github.com/cparnin/AppSec-Gym.git
+cd AppSec-Gym/cli
+npm install
 
+# Run interactive mode
+node src/index.js
+
+# Or use direct commands
+node src/index.js list
+node src/index.js start
+```
+
+## How It Works
+
+Once installed, running `node src/index.js` launches the interactive menu:
+
+```
 ╔════════════════════════════════════════╗
 ║        🏋️  AppSec Gym v0.1.0         ║
 ║      Security Training That Works      ║
@@ -43,25 +58,6 @@ What would you like to do?
 ```
 
 The interactive menu guides you through everything - no commands to memorize!
-
-## Quick Start
-
-```bash
-# Clone and install
-git clone https://github.com/cparnin/AppSec-Gym.git
-cd AppSec-Gym/cli
-npm install
-
-# Run interactive mode
-node src/index.js
-
-# Or use direct commands
-node src/index.js list
-node src/index.js start
-node src/index.js check
-```
-
-*Note: Global install via npm coming soon. For now, use `node src/index.js` from the cli directory.*
 
 ## Current Status
 
