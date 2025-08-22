@@ -68,7 +68,7 @@ node src/index.js --help
 
 ## Code of Conduct
 
-- Be respectful and inclusive
+- Be respectful
 - Focus on constructive feedback
 - Help newcomers learn
 - Security-focused but beginner-friendly
