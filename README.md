@@ -12,7 +12,7 @@
 
 ## What is AppSec Gym?
 
-AppSec Gym is a **command-line training game** where you practice fixing real security vulnerabilities in actual code. Think of it as "Wordle for Security" - you get vulnerable code snippets and fix them using your favorite editor.
+AppSec Gym is a **command-line training game** where you practice fixing real security vulnerabilities in actual code using your favorite editor.
 
 ### Not Another Security Quiz!
 - **Fix real code, not take quizzes** - Practice on actual vulnerable code files
