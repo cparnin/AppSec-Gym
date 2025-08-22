@@ -47,18 +47,21 @@ The interactive menu guides you through everything - no commands to memorize!
 ## Quick Start
 
 ```bash
-# Install (coming soon to npm)
-npm install -g appsec-gym
-
-# Start training
-appsec-gym start
-
-# For now, test locally:
+# Clone and install
 git clone https://github.com/cparnin/AppSec-Gym.git
 cd AppSec-Gym/cli
 npm install
-node src/index.js --help
+
+# Run interactive mode
+node src/index.js
+
+# Or use direct commands
+node src/index.js list
+node src/index.js start
+node src/index.js check
 ```
+
+*Note: Global install via npm coming soon. For now, use `node src/index.js` from the cli directory.*
 
 ## Current Status
 
