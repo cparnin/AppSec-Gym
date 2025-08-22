@@ -105,7 +105,8 @@ class ChallengeManager {
     return {
       challenge: this.currentChallenge,
       instructions: this.getInstructions(challengeId),
-      filePath: filePath
+      filePath: filePath,
+      workspacePath: challengeWorkspace
     };
   }
 

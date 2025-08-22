@@ -7,12 +7,14 @@ const package = require('../package.json');
 const InteractiveMenu = require('./utils/menu');
 const ChallengeManager = require('./core/challengeManager');
 const ProgressTracker = require('./core/progressTracker');
+const EditorLauncher = require('./utils/editor');
 
 const program = new Command();
 
 // Initialize core components
 const challengeManager = new ChallengeManager();
 const progressTracker = new ProgressTracker();
+const editorLauncher = new EditorLauncher();
 const menu = new InteractiveMenu(challengeManager, progressTracker);
 
 program
@@ -50,9 +52,14 @@ program
       progressTracker.markChallengeStarted(challengeId);
       
       console.log(result.instructions);
-      console.log(chalk.green(`\n📁 Challenge files created in:`));
-      console.log(chalk.white(`   ${result.filePath}\n`));
-      console.log(chalk.gray('Edit the file and run "appsec-gym check" when ready!'));
+      
+      // Try to open in editor
+      const opened = await editorLauncher.openFile(result.filePath);
+      if (!opened) {
+        console.log(chalk.gray(`\nTip: ${editorLauncher.getOpenCommand(result.filePath)}`));
+      }
+      
+      console.log(chalk.gray('\nRun "appsec-gym check" when you\'ve fixed it!'));
     } catch (error) {
       console.error(chalk.red(`Error: ${error.message}`));
     }
@@ -210,8 +217,14 @@ async function runInteractiveMode() {
           progressTracker.markChallengeStarted(challengeId);
           console.clear();
           console.log(result.instructions);
-          console.log(chalk.green(`\n📁 Challenge files created in:`));
-          console.log(chalk.white(`   ${result.filePath}\n`));
+          
+          // Try to open in editor
+          const opened = await editorLauncher.openFile(result.filePath);
+          if (!opened) {
+            console.log(chalk.gray(`\nTip: ${editorLauncher.getOpenCommand(result.filePath)}`));
+          }
+          
+          console.log(chalk.yellow('\n📝 Edit the file, then return here and select "Check your solution"'));
           await menu.pauseForUser();
           break;
           
@@ -284,7 +297,35 @@ async function runInteractiveMode() {
           break;
           
         case 'settings':
-          console.log(chalk.gray('Settings coming soon...'));
+          console.clear();
+          console.log(chalk.cyan('⚙️  Settings\n'));
+          
+          const availableEditors = await editorLauncher.detectAvailableEditors();
+          if (availableEditors.length > 0) {
+            console.log(chalk.green('Detected editors:'));
+            availableEditors.forEach(e => console.log(`  - ${e.name} (${e.command})`));
+            
+            const inquirer = require('inquirer');
+            const { editor } = await inquirer.prompt([
+              {
+                type: 'list',
+                name: 'editor',
+                message: 'Select your preferred editor:',
+                choices: [
+                  ...availableEditors.map(e => ({ name: e.name, value: e.command })),
+                  { name: 'None (manually open files)', value: null }
+                ]
+              }
+            ]);
+            
+            if (editor) {
+              editorLauncher.savePreferredEditor(editor);
+              console.log(chalk.green(`\n✅ Set ${editor} as your default editor`));
+            }
+          } else {
+            console.log(chalk.yellow('No editors detected. Files will need to be opened manually.'));
+          }
+          
           await menu.pauseForUser();
           break;
           
