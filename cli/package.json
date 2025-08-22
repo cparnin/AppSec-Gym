@@ -8,7 +8,11 @@
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "jest",
+    "test": "node tests/run-tests.js",
+    "test:unit": "node tests/run-tests.js unit",
+    "test:integration": "node tests/run-tests.js integration", 
+    "test:ux": "node tests/run-tests.js ux",
+    "test:watch": "jest --watch",
     "dev": "nodemon src/index.js"
   },
   "keywords": ["security", "appsec", "training", "cli", "vulnerabilities", "owasp"],

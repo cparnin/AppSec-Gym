@@ -34,12 +34,30 @@ npm run dev
 cli/
 ├── src/
 │   ├── index.js          # Main entry point
-│   ├── commands/         # Individual command handlers
 │   ├── core/            
 │   │   ├── challengeManager.js  # Challenge loading/validation
 │   │   └── progressTracker.js   # User progress tracking
 │   └── utils/
-│       └── menu.js              # Interactive menu system
+│       ├── menu.js              # Interactive menu system
+│       └── editor.js            # VS Code/Vim integration
+├── tests/
+│   ├── unit/            # Core functionality tests
+│   ├── integration/     # CLI command tests  
+│   ├── ux/             # User experience tests
+│   └── run-tests.js    # Test runner
 ├── package.json
+├── jest.config.js
 └── README.md
+```
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test types  
+npm run test:unit
+npm run test:integration
+npm run test:ux
 ```

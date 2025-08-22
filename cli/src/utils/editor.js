@@ -7,11 +7,7 @@ class EditorLauncher {
   constructor() {
     this.editors = [
       { name: 'VS Code', command: 'code', check: 'code --version' },
-      { name: 'Vim', command: 'vim', check: 'vim --version' },
-      { name: 'Nano', command: 'nano', check: 'nano --version' },
-      { name: 'Sublime Text', command: 'subl', check: 'subl --version' },
-      { name: 'Atom', command: 'atom', check: 'atom --version' },
-      { name: 'Emacs', command: 'emacs', check: 'emacs --version' }
+      { name: 'Vim', command: 'vim', check: 'vim --version' }
     ];
     this.preferredEditor = this.loadPreferredEditor();
   }
@@ -64,23 +60,53 @@ class EditorLauncher {
   async openFile(filePath, editor = null) {
     const editorToUse = editor || this.preferredEditor;
     
-    if (!editorToUse) {
+    if (!editorToUse || editorToUse === 'manual') {
       // No editor configured, show instructions
       console.log(chalk.yellow('\n📝 Open this file in your editor:'));
       console.log(chalk.white(`   ${filePath}\n`));
-      console.log(chalk.gray('Tip: Run "appsec-gym settings" to configure your preferred editor'));
       return false;
     }
 
+    // Special handling for VS Code on Mac
+    let command = editorToUse;
+    if (editorToUse === 'code' && process.platform === 'darwin') {
+      // Try common VS Code locations on Mac
+      const vscodeLocations = [
+        '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
+        '/usr/local/bin/code',
+        'code'
+      ];
+      
+      for (const loc of vscodeLocations) {
+        const exists = await new Promise(resolve => {
+          exec(`which "${loc}" 2>/dev/null || test -f "${loc}"`, (error) => {
+            resolve(!error);
+          });
+        });
+        if (exists) {
+          command = loc;
+          break;
+        }
+      }
+    }
+
     return new Promise((resolve) => {
-      exec(`${editorToUse} "${filePath}"`, (error) => {
+      // Use open command on Mac for better compatibility
+      const openCommand = process.platform === 'darwin' && editorToUse === 'code'
+        ? `open -a "Visual Studio Code" "${filePath}"`
+        : `${command} "${filePath}"`;
+        
+      exec(openCommand, (error) => {
         if (error) {
-          console.log(chalk.yellow('\n📝 Open this file in your editor:'));
+          console.log(chalk.yellow('\n📝 Could not auto-open. Please open this file manually:'));
           console.log(chalk.white(`   ${filePath}\n`));
-          console.log(chalk.red(`Failed to open ${editorToUse}. Opening manually.`));
+          if (editorToUse === 'code') {
+            console.log(chalk.gray('Tip: Make sure VS Code command line tools are installed'));
+            console.log(chalk.gray('     In VS Code: Cmd+Shift+P → "Shell Command: Install \'code\' command"'));
+          }
           resolve(false);
         } else {
-          console.log(chalk.green(`✅ Opened in ${editorToUse}`));
+          console.log(chalk.green(`\n✅ Opened in ${editorToUse}`));
           resolve(true);
         }
       });

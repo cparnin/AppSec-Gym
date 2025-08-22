@@ -229,11 +229,10 @@ async function runInteractiveMode() {
       choices.push(new inquirer.Separator());
     }
     
-    // Always offer common editors as options
+    // Always offer VS Code and Vim as options
     choices.push(
       { name: 'VS Code', value: 'code' },
       { name: 'Vim', value: 'vim' },
-      { name: 'Nano', value: 'nano' },
       new inquirer.Separator(),
       { name: 'I\'ll open files manually', value: 'manual' }
     );

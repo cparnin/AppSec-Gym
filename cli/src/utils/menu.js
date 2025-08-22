@@ -1,5 +1,6 @@
 const inquirer = require('inquirer');
 const chalk = require('chalk');
+const path = require('path');
 
 class InteractiveMenu {
   constructor(challengeManager, progressTracker) {
@@ -15,12 +16,14 @@ class InteractiveMenu {
     const progress = this.progressTracker.getProgress();
     
     if (currentChallenge) {
-      console.log(chalk.cyan(`Current Challenge: ${currentChallenge.title}`));
-      console.log(chalk.gray(`Category: ${currentChallenge.category} | Difficulty: ${currentChallenge.difficulty}`));
-      console.log(chalk.yellow(`Status: ${currentChallenge.status || 'Not started'}`));
+      console.log(chalk.cyan(`Current: ${currentChallenge.title}`));
+      console.log(chalk.gray(`${currentChallenge.difficulty} | ${currentChallenge.category}`));
       
       if (currentChallenge.filePath) {
-        console.log(chalk.white(`\n📝 File to edit: ${currentChallenge.filePath}\n`));
+        // Show just the filename, not the full path
+        const filename = path.basename(currentChallenge.filePath);
+        console.log(chalk.white(`\nFile: ${filename}`));
+        console.log(chalk.gray(`Path: ~/appsec-gym/vulnerable.js\n`));
       } else {
         console.log();
       }
@@ -49,40 +52,36 @@ class InteractiveMenu {
     if (currentChallenge) {
       if (currentChallenge.status === 'in_progress') {
         choices.push(
-          { name: chalk.cyan('📝 Open file in editor'), value: 'open-editor' },
-          { name: chalk.green('Check your solution'), value: 'check' },
-          { name: chalk.yellow('Get a hint'), value: 'hint' },
-          { name: chalk.blue('Show challenge again'), value: 'show' },
+          { name: '📝  Open in editor', value: 'open-editor' },
+          { name: '✓   Check solution', value: 'check' },
+          { name: '💡  Get hint', value: 'hint' },
           new inquirer.Separator()
         );
       } else if (currentChallenge.status === 'completed') {
         choices.push(
-          { name: chalk.green('Continue to next challenge'), value: 'next' },
-          { name: chalk.blue('Review solution'), value: 'review' },
+          { name: '→   Next challenge', value: 'next' },
+          { name: '👀  Review solution', value: 'review' },
           new inquirer.Separator()
         );
       } else {
         choices.push(
-          { name: chalk.green('Start this challenge'), value: 'start' },
-          { name: chalk.yellow('Get challenge info'), value: 'info' },
+          { name: '▶   Start challenge', value: 'start' },
           new inquirer.Separator()
         );
       }
     } else {
       choices.push(
-        { name: chalk.green('Start training (beginner mode)'), value: 'start-beginner' },
-        { name: chalk.blue('Choose a specific topic'), value: 'choose-topic' },
+        { name: '▶   Start training', value: 'start-beginner' },
+        { name: '📚  Browse challenges', value: 'choose-topic' },
         new inquirer.Separator()
       );
     }
 
     // Always available options
     choices.push(
-      { name: 'Browse all challenges', value: 'list' },
-      { name: 'View your progress', value: 'progress' },
+      { name: 'Progress', value: 'progress' },
       { name: 'Settings', value: 'settings' },
-      new inquirer.Separator(),
-      { name: chalk.gray('Exit'), value: 'exit' }
+      { name: 'Exit', value: 'exit' }
     );
 
     return choices;
