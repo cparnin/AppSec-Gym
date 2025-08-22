@@ -72,14 +72,16 @@ The interactive menu guides you through everything - no commands to memorize!
 
 ## Commands
 
-**Interactive Mode** (default): Just run `appsec-gym`
+**Interactive Mode** (default): `node src/index.js`
 
-**Direct Commands** (for power users):
-- `appsec-gym start` - Start/resume training
-- `appsec-gym check` - Check your solution
-- `appsec-gym hint` - Get a hint
-- `appsec-gym list` - Browse challenges
-- `appsec-gym progress` - View stats
+**Direct Commands**:
+- `node src/index.js start` - Start/resume training
+- `node src/index.js check` - Check your solution  
+- `node src/index.js hint` - Get a hint
+- `node src/index.js list` - Browse challenges
+- `node src/index.js progress` - View stats
+- `node src/index.js status` - Show current challenge
+- `node src/index.js reset` - Reset all progress
 
 ## Planned Challenge Categories
 
@@ -111,12 +113,14 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ```
 appsec-gym/
-├── cli/           # Node.js CLI application
+├── cli/           # Node.js CLI application (main package)
 ├── challenges/    # Vulnerability challenges (community contributions welcome!)
 ├── web/          # Optional web interface (future)
 ├── docs/         # Documentation and guides
 └── README.md     # You are here
 ```
+
+**Note**: The main application is in the `cli/` directory with its own package.json and dependencies.
 
 ## License
 
