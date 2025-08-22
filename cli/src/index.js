@@ -208,34 +208,53 @@ async function runInteractiveMode() {
     console.log(chalk.cyan('🎯 Welcome to AppSec Gym!\n'));
     console.log(chalk.white('Let\'s set up your preferred editor first.\n'));
     
-    const availableEditors = await editorLauncher.detectAvailableEditors();
+    console.log(chalk.gray('Detecting available editors...'));
+    
+    // Add timeout for editor detection
+    const availableEditors = await Promise.race([
+      editorLauncher.detectAvailableEditors(),
+      new Promise(resolve => setTimeout(() => resolve([]), 3000))
+    ]);
+    
+    const inquirer = require('inquirer');
+    
+    // Always show editor choices, even if detection failed
+    const choices = [];
+    
     if (availableEditors.length > 0) {
-      const inquirer = require('inquirer');
-      const { editor } = await inquirer.prompt([
-        {
-          type: 'list',
-          name: 'editor',
-          message: 'Which editor would you like to use?',
-          choices: [
-            ...availableEditors.map(e => ({ 
-              name: `${e.name}`, 
-              value: e.command 
-            })),
-            new inquirer.Separator(),
-            { name: 'I\'ll open files manually', value: 'manual' }
-          ]
-        }
-      ]);
-      
-      if (editor && editor !== 'manual') {
-        editorLauncher.savePreferredEditor(editor);
-        console.log(chalk.green(`\n✅ Great! We'll use ${editor} to open challenge files.\n`));
-      } else {
-        console.log(chalk.yellow('\n📝 No problem! We\'ll show you the file paths to open manually.\n'));
-      }
-      
-      await menu.pauseForUser('Press Enter to start training...');
+      choices.push(...availableEditors.map(e => ({ 
+        name: `${e.name} (detected)`, 
+        value: e.command 
+      })));
+      choices.push(new inquirer.Separator());
     }
+    
+    // Always offer common editors as options
+    choices.push(
+      { name: 'VS Code', value: 'code' },
+      { name: 'Vim', value: 'vim' },
+      { name: 'Nano', value: 'nano' },
+      new inquirer.Separator(),
+      { name: 'I\'ll open files manually', value: 'manual' }
+    );
+    
+    const { editor } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'editor',
+        message: 'Which editor would you like to use?',
+        choices: choices
+      }
+    ]);
+    
+    if (editor && editor !== 'manual') {
+      editorLauncher.savePreferredEditor(editor);
+      console.log(chalk.green(`\n✅ Great! We'll use ${editor} to open challenge files.\n`));
+    } else {
+      console.log(chalk.yellow('\n📝 No problem! We\'ll show you the file paths to open manually.\n'));
+    }
+    
+    await menu.pauseForUser('Press Enter to start training...');
   }
   
   let running = true;

@@ -44,7 +44,11 @@ class EditorLauncher {
     
     for (const editor of this.editors) {
       const isAvailable = await new Promise(resolve => {
-        exec(editor.check, (error) => {
+        const checkCommand = process.platform === 'win32' 
+          ? `where ${editor.command}` 
+          : `which ${editor.command}`;
+          
+        exec(checkCommand, { timeout: 1000 }, (error) => {
           resolve(!error);
         });
       });
