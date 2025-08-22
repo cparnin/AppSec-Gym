@@ -12,29 +12,53 @@
 
 ## What is AppSec Gym?
 
-AppSec Gym is a **command-line training platform** where developers practice identifying and fixing real application security vulnerabilities. Each "workout" is a hands-on coding challenge based on OWASP Top 10 and real-world security issues.
+AppSec Gym is a **command-line training game** where you practice fixing real security vulnerabilities in actual code. Think of it as "Wordle for Security" - you get vulnerable code snippets and fix them using your favorite editor.
 
-### Why CLI-First?
-- **Zero setup** - Works offline, no browser required  
-- **Developer-friendly** - Integrates with your existing workflow
-- **Git-based content** - Easy for community to contribute new challenges
-- **Simple distribution** - One npm install, works everywhere
+### Not Another Security Quiz!
+- **Fix real code, not take quizzes** - Practice on actual vulnerable code files
+- **Use your favorite editor** - VS Code, Vim, whatever you like  
+- **Learn by doing** - Fix the vulnerability, run tests, see if you got it right
+- **Community challenges via GitHub** - Anyone can contribute new vulnerabilities
+
+## How It Works
+
+```bash
+# Just run with no arguments for interactive mode:
+$ appsec-gym
+
+╔════════════════════════════════════════╗
+║        🏋️  AppSec Gym v0.1.0         ║
+║      Security Training That Works      ║
+╚════════════════════════════════════════╝
+
+Current Challenge: SQL Injection #1
+Status: Not started
+
+What would you like to do?
+> Start this challenge
+  Get a hint  
+  Browse all challenges
+  View your progress
+  Exit
+```
+
+The interactive menu guides you through everything - no commands to memorize!
 
 ## Quick Start
 
 ```bash
-# Clone and test locally
+# Install (coming soon to npm)
+npm install -g appsec-gym
+
+# Start training
+appsec-gym start
+
+# For now, test locally:
 git clone https://github.com/cparnin/AppSec-Gym.git
 cd AppSec-Gym/cli
 npm install
 node src/index.js --help
-
-# Test available commands
-node src/index.js warmup
-node src/index.js workout sql
 ```
-
-*Note: npm package will be available once challenges are implemented*
 
 ## Current Status
 
@@ -47,15 +71,16 @@ node src/index.js workout sql
 
 **Want to contribute?** We'd love your help! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for how to add new challenges.
 
-## Available Commands
+## Commands
 
-| Command | Description |
-|---------|-------------|
-| `warmup` | Start with beginner-friendly challenges |
-| `workout <type>` | Focus on specific vulnerability (sql, xss, auth) |
-| `check` | Validate your current solution |
-| `next` | Move to next challenge |
-| `progress` | Show training progress and achievements |
+**Interactive Mode** (default): Just run `appsec-gym`
+
+**Direct Commands** (for power users):
+- `appsec-gym start` - Start/resume training
+- `appsec-gym check` - Check your solution
+- `appsec-gym hint` - Get a hint
+- `appsec-gym list` - Browse challenges
+- `appsec-gym progress` - View stats
 
 ## Planned Challenge Categories
 
