@@ -18,16 +18,6 @@ appsec-gym list
 appsec-gym start
 ```
 
-## Testing
-
-```bash
-# Run tests
-npm test
-
-# Development mode with auto-reload
-npm run dev
-```
-
 ## Project Structure
 
 ```
