@@ -7,7 +7,9 @@ class EditorLauncher {
   constructor() {
     this.editors = [
       { name: 'VS Code', command: 'code', check: 'code --version' },
-      { name: 'Vim', command: 'vim', check: 'vim --version' }
+      { name: 'Vim', command: 'vim', check: 'vim --version' },
+      { name: 'Nano', command: 'nano', check: 'nano --version' },
+      { name: 'TextEdit (Mac)', command: 'open -e', check: 'which open' }
     ];
     this.preferredEditor = this.loadPreferredEditor();
   }
@@ -59,54 +61,62 @@ class EditorLauncher {
 
   async openFile(filePath, editor = null) {
     const editorToUse = editor || this.preferredEditor;
-    
+
     if (!editorToUse || editorToUse === 'manual') {
       // No editor configured, show instructions
-      console.log(chalk.yellow('\n📝 Open this file in your editor:'));
+      console.log(chalk.cyan('\n📁 Challenge file created:'));
       console.log(chalk.white(`   ${filePath}\n`));
+      console.log(chalk.yellow('Please open this file in your preferred editor to start fixing the vulnerability.'));
       return false;
     }
 
-    // Special handling for VS Code on Mac
-    let command = editorToUse;
-    if (editorToUse === 'code' && process.platform === 'darwin') {
-      // Try common VS Code locations on Mac
-      const vscodeLocations = [
-        '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
-        '/usr/local/bin/code',
-        'code'
-      ];
-      
-      for (const loc of vscodeLocations) {
-        const exists = await new Promise(resolve => {
-          exec(`which "${loc}" 2>/dev/null || test -f "${loc}"`, (error) => {
-            resolve(!error);
-          });
-        });
-        if (exists) {
-          command = loc;
-          break;
-        }
-      }
-    }
-
     return new Promise((resolve) => {
-      // Use open command on Mac for better compatibility
-      const openCommand = process.platform === 'darwin' && editorToUse === 'code'
-        ? `open -a "Visual Studio Code" "${filePath}"`
-        : `${command} "${filePath}"`;
-        
+      let openCommand;
+
+      if (editorToUse === 'code') {
+        // Try VS Code with different approaches
+        if (process.platform === 'darwin') {
+          openCommand = `open -a "Visual Studio Code" "${filePath}" 2>/dev/null || code "${filePath}" 2>/dev/null`;
+        } else {
+          openCommand = `code "${filePath}"`;
+        }
+      } else if (editorToUse === 'vim') {
+        // Open vim in a new terminal window on macOS
+        if (process.platform === 'darwin') {
+          openCommand = `osascript -e 'tell application "Terminal" to do script "vim \\"${filePath}\\""'`;
+        } else {
+          openCommand = `gnome-terminal -- vim "${filePath}" 2>/dev/null || xterm -e vim "${filePath}" 2>/dev/null || vim "${filePath}"`;
+        }
+      } else if (editorToUse === 'nano') {
+        // Open nano in a new terminal window on macOS
+        if (process.platform === 'darwin') {
+          openCommand = `osascript -e 'tell application "Terminal" to do script "nano \\"${filePath}\\""'`;
+        } else {
+          openCommand = `gnome-terminal -- nano "${filePath}" 2>/dev/null || xterm -e nano "${filePath}" 2>/dev/null || nano "${filePath}"`;
+        }
+      } else if (editorToUse === 'open -e') {
+        // TextEdit on Mac
+        openCommand = `open -e "${filePath}"`;
+      } else {
+        // Generic editor command
+        openCommand = `${editorToUse} "${filePath}"`;
+      }
+
       exec(openCommand, (error) => {
+        // Always show the file path for manual opening
+        console.log(chalk.cyan('\n📁 Challenge file created:'));
+        console.log(chalk.white(`   ${filePath}\n`));
+
         if (error) {
-          console.log(chalk.yellow('\n📝 Could not auto-open. Please open this file manually:'));
-          console.log(chalk.white(`   ${filePath}\n`));
+          console.log(chalk.yellow('Could not auto-open in editor. Please open manually.'));
           if (editorToUse === 'code') {
             console.log(chalk.gray('Tip: Make sure VS Code command line tools are installed'));
             console.log(chalk.gray('     In VS Code: Cmd+Shift+P → "Shell Command: Install \'code\' command"'));
           }
+          console.log(chalk.gray(`Manual command: ${editorToUse} "${filePath}"`));
           resolve(false);
         } else {
-          console.log(chalk.green(`\n✅ Opened in ${editorToUse}`));
+          console.log(chalk.green(`✅ Also opened in ${editorToUse}`));
           resolve(true);
         }
       });
