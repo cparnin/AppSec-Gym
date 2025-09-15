@@ -1,26 +1,25 @@
 <div align="center">
 <img width="500" height="500" alt="AppSecGym" src="https://github.com/user-attachments/assets/e62adbd4-7656-48c3-b40d-236a72010afc" />
 
-**Interactive CLI training gym for application security vulnerabilities**
+**Interactive CLI training for application security vulnerabilities**
 
-*Hands-on practice fixing real security vulnerabilities through interactive challenges*
+Practice fixing real security issues in actual code
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 </div>
 
 ## What is AppSec Gym?
 
-AppSec Gym is a **command-line training game** where you practice fixing real security vulnerabilities in actual code using your favorite editor.
+AppSec Gym is a command-line training tool where you practice fixing real security vulnerabilities in actual code using your favorite editor.
 
 ### Not Another Security Quiz!
 - **Fix real code, not take quizzes** - Practice on actual vulnerable code files
-- **Use your favorite editor** - VS Code, Vim, whatever you like  
+- **Use your favorite editor** - VS Code, Vim, whatever you like
 - **Learn by doing** - Fix the vulnerability, run tests, see if you got it right
-- **Community challenges via GitHub** - Anyone can contribute new vulnerabilities
+- **Real vulnerability scenarios** - Practice on actual security issues
 
-## Quick Start
+## Installation & Usage
 
 ```bash
 # Clone and install
@@ -28,12 +27,14 @@ git clone https://github.com/cparnin/AppSec-Gym.git
 cd AppSec-Gym/cli
 npm install
 
-# Run interactive mode
+# Start training (interactive mode)
 node src/index.js
 
 # Or use direct commands
-node src/index.js list
-node src/index.js start
+node src/index.js list                    # See available challenges
+node src/index.js start sql-injection-basic  # Start specific challenge
+node src/index.js check                   # Validate your fix
+node src/index.js hint                    # Get help
 ```
 
 ## How It Works
@@ -61,14 +62,12 @@ The interactive menu guides you through everything - no commands to memorize!
 
 ## Current Status
 
-**Under Active Development**
+**Complete Training Platform**
 
-- CLI foundation with basic commands
-- Project structure for community contributions  
-- Creating first OWASP Top 10 challenges
-- Planned: SQL injection, XSS, authentication flaws, and more
-
-**Want to contribute?** We'd love your help! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for how to add new challenges.
+- Full CLI with all essential commands
+- 4 comprehensive OWASP Top 10 challenges
+- Advanced security validation system
+- Interactive learning with hints and feedback
 
 ## Commands
 
@@ -83,31 +82,19 @@ The interactive menu guides you through everything - no commands to memorize!
 - `node src/index.js status` - Show current challenge
 - `node src/index.js reset` - Reset all progress
 
-## Planned Challenge Categories
+## Available Challenges
 
-### OWASP Top 10 (2021)
-- [ ] A01: Broken Access Control
-- [ ] A02: Cryptographic Failures  
-- [ ] A03: Injection (SQL, NoSQL, LDAP)
-- [ ] A07: Cross-Site Scripting (XSS)
-- [ ] A08: Software Data Integrity Failures
-- [ ] A10: Server-Side Request Forgery
+### OWASP Top 10 Security Issues
+- [x] **SQL Injection** - Login system with database query vulnerabilities
+- [x] **Stored XSS** - Comment system with script injection issues
+- [x] **JWT Authentication** - Multiple authentication security flaws
+- [x] **Path Traversal** - File server with directory traversal bugs
 
-### Real-World Scenarios
-- [ ] JWT vulnerabilities
-- [ ] API security issues
-- [ ] Container security misconfigurations
-- [ ] CI/CD pipeline security
-
-## Contributing
-
-We welcome contributions! Whether you're:
-- Reporting bugs
-- Suggesting new challenge ideas  
-- Writing new vulnerability challenges
-- Improving documentation
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+Each challenge includes:
+- Real vulnerable code to fix
+- Progressive hints system
+- Automated security validation
+- Detailed feedback and scoring
 
 ## Project Structure
 
@@ -128,6 +115,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Star this repo** if you're interested in interactive security training!
-
-**Follow the project** for updates on new vulnerability challenges and features.
+A complete interactive security training platform for developers.

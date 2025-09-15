@@ -1,0 +1,363 @@
+id: path-traversal-file-server
+title: "Path Traversal in File Server"
+category: injection
+difficulty: intermediate
+owasp_category: A03
+description: "Secure a file server vulnerable to directory traversal attacks"
+learning_objectives:
+  - Understand path traversal attack vectors
+  - Learn proper file path validation techniques
+  - Implement secure file serving mechanisms
+  - Understand the principle of least privilege for file access
+
+vulnerable_code:
+  language: javascript
+  framework: express
+  files:
+    - name: fileServer.js
+      content: |
+        const express = require('express');
+        const fs = require('fs');
+        const path = require('path');
+        const app = express();
+
+        app.use(express.json());
+
+        // Public files directory
+        const PUBLIC_DIR = path.join(__dirname, 'public');
+
+        // VULNERABILITY 1: Direct path concatenation without validation
+        app.get('/files/:filename', (req, res) => {
+          const filename = req.params.filename;
+
+          // DANGEROUS: No validation of the filename parameter
+          const filePath = path.join(PUBLIC_DIR, filename);
+
+          try {
+            // VULNERABILITY 2: No check if file is within allowed directory
+            const content = fs.readFileSync(filePath, 'utf8');
+            res.send(content);
+          } catch (error) {
+            res.status(404).json({ error: 'File not found' });
+          }
+        });
+
+        // VULNERABILITY 3: Dynamic file inclusion with user input
+        app.post('/include', (req, res) => {
+          const { template } = req.body;
+
+          if (!template) {
+            return res.status(400).json({ error: 'Template parameter required' });
+          }
+
+          try {
+            // DANGEROUS: User controls the file path completely
+            const templatePath = path.join(__dirname, 'templates', template);
+            const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+            res.json({
+              template: template,
+              content: templateContent
+            });
+          } catch (error) {
+            res.status(404).json({ error: 'Template not found' });
+          }
+        });
+
+        // VULNERABILITY 4: File download with user-controlled paths
+        app.get('/download/:category/:filename', (req, res) => {
+          const { category, filename } = req.params;
+
+          // DANGEROUS: Building path from user input without validation
+          const downloadPath = path.join(__dirname, 'downloads', category, filename);
+
+          try {
+            const stats = fs.statSync(downloadPath);
+
+            if (stats.isFile()) {
+              res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+              res.setHeader('Content-Type', 'application/octet-stream');
+
+              const fileStream = fs.createReadStream(downloadPath);
+              fileStream.pipe(res);
+            } else {
+              res.status(404).json({ error: 'File not found' });
+            }
+          } catch (error) {
+            res.status(404).json({ error: 'File not found' });
+          }
+        });
+
+        // VULNERABILITY 5: File upload with path injection
+        app.post('/upload', (req, res) => {
+          const { filename, content, directory } = req.body;
+
+          if (!filename || !content) {
+            return res.status(400).json({ error: 'Filename and content required' });
+          }
+
+          // DANGEROUS: User controls the directory structure
+          const uploadDir = directory || 'uploads';
+          const uploadPath = path.join(__dirname, uploadDir, filename);
+
+          try {
+            // VULNERABILITY 6: No directory creation validation
+            fs.mkdirSync(path.dirname(uploadPath), { recursive: true });
+            fs.writeFileSync(uploadPath, content);
+
+            res.json({
+              message: 'File uploaded successfully',
+              path: uploadPath
+            });
+          } catch (error) {
+            res.status(500).json({ error: 'Upload failed' });
+          }
+        });
+
+        // VULNERABILITY 7: Configuration file access
+        app.get('/config/:section', (req, res) => {
+          const section = req.params.section;
+
+          // DANGEROUS: Direct file access based on user input
+          const configFile = path.join(__dirname, 'config', `${section}.json`);
+
+          try {
+            const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
+            res.json(config);
+          } catch (error) {
+            res.status(404).json({ error: 'Configuration section not found' });
+          }
+        });
+
+        app.listen(3000, () => {
+          console.log('File server running on port 3000');
+          console.log(`Public directory: ${PUBLIC_DIR}`);
+        });
+
+        module.exports = app;
+
+    - name: create-test-files.js
+      content: |
+        const fs = require('fs');
+        const path = require('path');
+
+        // Create directory structure for testing
+        const dirs = ['public', 'templates', 'downloads/docs', 'downloads/images', 'config', 'private'];
+
+        dirs.forEach(dir => {
+          fs.mkdirSync(path.join(__dirname, dir), { recursive: true });
+        });
+
+        // Create test files
+        fs.writeFileSync(path.join(__dirname, 'public/readme.txt'), 'This is a public readme file.');
+        fs.writeFileSync(path.join(__dirname, 'templates/header.html'), '<h1>Header Template</h1>');
+        fs.writeFileSync(path.join(__dirname, 'config/database.json'), '{"host": "localhost", "password": "secret123"}');
+        fs.writeFileSync(path.join(__dirname, 'private/secrets.txt'), 'API_KEY=super_secret_key_12345');
+        fs.writeFileSync(path.join(__dirname, '../../../etc/passwd'), 'root:x:0:0:root:/root:/bin/bash\nuser:x:1000:1000:User:/home/user:/bin/bash');
+
+        console.log('Test files created successfully');
+
+attack_vectors:
+  - attack: "Basic directory traversal"
+    payload: "../../../etc/passwd"
+    endpoint: "/files/"
+    description: "Access system files using relative path traversal"
+  - attack: "URL-encoded traversal"
+    payload: "..%2F..%2F..%2Fetc%2Fpasswd"
+    endpoint: "/files/"
+    description: "Bypass basic filters using URL encoding"
+  - attack: "Double-encoded traversal"
+    payload: "..%252F..%252F..%252Fetc%252Fpasswd"
+    endpoint: "/files/"
+    description: "Use double URL encoding to bypass filters"
+  - attack: "Template path injection"
+    payload: "../config/database.json"
+    endpoint: "/include"
+    description: "Access configuration files through template inclusion"
+  - attack: "Download path manipulation"
+    payload: { category: "../../private", filename: "secrets.txt" }
+    endpoint: "/download/"
+    description: "Download private files using category manipulation"
+  - attack: "Upload directory traversal"
+    payload: { directory: "../private", filename: "malicious.txt", content: "evil content" }
+    endpoint: "/upload"
+    description: "Write files outside intended directory"
+
+hints:
+  - "User input is being used directly to construct file paths without validation"
+  - "Use path.resolve() and check if the resolved path starts with the allowed directory"
+  - "Implement a whitelist of allowed files or directories"
+  - "Normalize paths before validation to handle different path representations"
+  - "Consider using path.relative() to check if a path escapes the base directory"
+  - "Validate file extensions and sanitize filenames"
+
+solution:
+  fixes:
+    - description: "Path validation utility function"
+      code: |
+        const path = require('path');
+
+        function validatePath(baseDir, userPath) {
+          // Resolve the full path
+          const fullPath = path.resolve(baseDir, userPath);
+
+          // Check if the resolved path is within the base directory
+          const relativePath = path.relative(baseDir, fullPath);
+
+          // If relative path starts with .. or is absolute, it's trying to escape
+          if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+            return null;
+          }
+
+          return fullPath;
+        }
+
+    - description: "Secure file serving"
+      code: |
+        app.get('/files/:filename', (req, res) => {
+          const filename = req.params.filename;
+
+          // Sanitize filename - remove any path separators
+          const sanitizedFilename = path.basename(filename);
+
+          // Validate the path
+          const safePath = validatePath(PUBLIC_DIR, sanitizedFilename);
+
+          if (!safePath) {
+            return res.status(403).json({ error: 'Access denied' });
+          }
+
+          try {
+            const content = fs.readFileSync(safePath, 'utf8');
+            res.send(content);
+          } catch (error) {
+            res.status(404).json({ error: 'File not found' });
+          }
+        });
+
+    - description: "Secure template inclusion with whitelist"
+      code: |
+        const ALLOWED_TEMPLATES = ['header.html', 'footer.html', 'nav.html'];
+
+        app.post('/include', (req, res) => {
+          const { template } = req.body;
+
+          // Whitelist validation
+          if (!ALLOWED_TEMPLATES.includes(template)) {
+            return res.status(403).json({ error: 'Template not allowed' });
+          }
+
+          try {
+            const templatePath = path.join(__dirname, 'templates', template);
+            const templateContent = fs.readFileSync(templatePath, 'utf8');
+
+            res.json({
+              template: template,
+              content: templateContent
+            });
+          } catch (error) {
+            res.status(404).json({ error: 'Template not found' });
+          }
+        });
+
+    - description: "Secure download with path validation"
+      code: |
+        const ALLOWED_DOWNLOAD_DIRS = ['docs', 'images'];
+
+        app.get('/download/:category/:filename', (req, res) => {
+          const { category, filename } = req.params;
+
+          // Validate category against whitelist
+          if (!ALLOWED_DOWNLOAD_DIRS.includes(category)) {
+            return res.status(403).json({ error: 'Category not allowed' });
+          }
+
+          // Sanitize filename
+          const sanitizedFilename = path.basename(filename);
+
+          const downloadPath = path.join(__dirname, 'downloads', category, sanitizedFilename);
+
+          // Validate the final path
+          const basePath = path.join(__dirname, 'downloads', category);
+          const safePath = validatePath(basePath, sanitizedFilename);
+
+          if (!safePath) {
+            return res.status(403).json({ error: 'Access denied' });
+          }
+
+          try {
+            const stats = fs.statSync(safePath);
+            if (stats.isFile()) {
+              res.setHeader('Content-Disposition', `attachment; filename="${sanitizedFilename}"`);
+              res.setHeader('Content-Type', 'application/octet-stream');
+
+              const fileStream = fs.createReadStream(safePath);
+              fileStream.pipe(res);
+            } else {
+              res.status(404).json({ error: 'File not found' });
+            }
+          } catch (error) {
+            res.status(404).json({ error: 'File not found' });
+          }
+        });
+
+    - description: "Input sanitization and validation"
+      code: |
+        function sanitizeFilename(filename) {
+          // Remove any path separators and dangerous characters
+          return filename
+            .replace(/[<>:"/\\|?*]/g, '') // Remove Windows invalid chars
+            .replace(/\.\./g, '')         // Remove directory traversal
+            .replace(/^\.+/, '')          // Remove leading dots
+            .substring(0, 255);           // Limit length
+        }
+
+validation:
+  security_checks:
+    - check: "path_validation_function"
+      pattern: "validatePath|path\\.relative.*startsWith"
+      message: "Should implement path validation to prevent directory traversal"
+    - check: "basename_usage"
+      pattern: "path\\.basename"
+      message: "Should use path.basename to sanitize filenames"
+    - check: "whitelist_validation"
+      pattern: "ALLOWED_.*includes"
+      message: "Should use whitelists for allowed files/directories"
+    - check: "no_direct_concatenation"
+      pattern: "!path\\.join.*req\\.(params|body)"
+      message: "Should not directly concatenate user input to paths"
+    - check: "input_sanitization"
+      pattern: "sanitize|replace.*\\.\\."
+      message: "Should sanitize user input to remove dangerous characters"
+
+test_cases:
+  - name: "Blocks directory traversal with ../"
+    input: { filename: "../../../etc/passwd" }
+    expected_result: "access_denied"
+  - name: "Blocks URL-encoded traversal"
+    input: { filename: "..%2F..%2Fconfig%2Fdatabase.json" }
+    expected_result: "access_denied"
+  - name: "Allows legitimate file access"
+    input: { filename: "readme.txt" }
+    expected_result: "file_served"
+  - name: "Blocks template path injection"
+    input: { template: "../config/database.json" }
+    expected_result: "access_denied"
+
+references:
+  - title: "OWASP Path Traversal"
+    url: "https://owasp.org/www-community/attacks/Path_Traversal"
+  - title: "CWE-22: Path Traversal"
+    url: "https://cwe.mitre.org/data/definitions/22.html"
+  - title: "Node.js Path Module Documentation"
+    url: "https://nodejs.org/api/path.html"
+  - title: "File Upload Security Best Practices"
+    url: "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html"
+
+tags:
+  - path-traversal
+  - directory-traversal
+  - file-security
+  - input-validation
+  - file-inclusion
+  - owasp-top-10

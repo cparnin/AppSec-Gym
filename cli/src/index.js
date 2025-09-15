@@ -248,7 +248,7 @@ async function runInteractiveMode() {
     
     if (editor && editor !== 'manual') {
       editorLauncher.savePreferredEditor(editor);
-      console.log(chalk.green(`\n✅ Great! We'll use ${editor} to open challenge files.\n`));
+      console.log(chalk.green(`\n✅ Using ${editor} to open challenge files.\n`));
     } else {
       console.log(chalk.yellow('\n📝 No problem! We\'ll show you the file paths to open manually.\n'));
     }

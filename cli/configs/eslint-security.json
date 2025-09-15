@@ -1,0 +1,39 @@
+{
+  "extends": ["eslint:recommended"],
+  "plugins": ["security"],
+  "rules": {
+    "security/detect-sql-injection": "error",
+    "security/detect-xss": "error",
+    "security/detect-eval-with-expression": "error",
+    "security/detect-non-literal-require": "error",
+    "security/detect-non-literal-fs-filename": "error",
+    "security/detect-unsafe-regex": "error",
+    "security/detect-buffer-noassert": "error",
+    "security/detect-child-process": "warn",
+    "security/detect-disable-mustache-escape": "error",
+    "security/detect-object-injection": "warn",
+    "security/detect-new-buffer": "error",
+    "security/detect-possible-timing-attacks": "warn",
+    "security/detect-pseudoRandomBytes": "error",
+    "security/detect-bidi-characters": "error"
+  },
+  "env": {
+    "node": true,
+    "es6": true,
+    "browser": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "globals": {
+    "console": "readonly",
+    "process": "readonly",
+    "Buffer": "readonly",
+    "__dirname": "readonly",
+    "__filename": "readonly",
+    "require": "readonly",
+    "module": "readonly",
+    "exports": "readonly"
+  }
+}

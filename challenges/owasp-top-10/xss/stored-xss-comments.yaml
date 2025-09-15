@@ -1,0 +1,248 @@
+id: stored-xss-comments
+title: "Stored XSS in Comment System"
+category: xss
+difficulty: beginner
+owasp_category: A07
+description: "Fix a stored cross-site scripting vulnerability in a user comment system"
+learning_objectives:
+  - Understand stored XSS attacks and their impact
+  - Learn proper input sanitization techniques
+  - Implement content security policies
+  - Understand the difference between encoding and escaping
+
+vulnerable_code:
+  language: javascript
+  framework: express
+  files:
+    - name: server.js
+      content: |
+        const express = require('express');
+        const path = require('path');
+        const app = express();
+
+        app.use(express.json());
+        app.use(express.static('public'));
+
+        let comments = []; // In-memory storage for demo
+
+        app.get('/', (req, res) => {
+          res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        });
+
+        // BUG: No input sanitization
+        app.post('/api/comments', (req, res) => {
+          const { username, comment } = req.body;
+
+          // Storing raw user input without any sanitization
+          const newComment = {
+            id: Date.now(),
+            username: username,
+            comment: comment, // Problem: Raw HTML will be rendered
+            timestamp: new Date().toISOString()
+          };
+
+          comments.push(newComment);
+          res.json({ success: true, comment: newComment });
+        });
+
+        app.get('/api/comments', (req, res) => {
+          res.json(comments);
+        });
+
+        app.listen(3000, () => {
+          console.log('Server running on http://localhost:3000');
+        });
+
+    - name: public/index.html
+      content: |
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Comment System</title>
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            .comment { border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 5px; }
+            .comment-header { font-weight: bold; color: #666; }
+            .comment-text { margin: 10px 0; }
+            .form-group { margin: 10px 0; }
+            label { display: block; margin-bottom: 5px; }
+            input, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+            button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+            button:hover { background: #0056b3; }
+          </style>
+        </head>
+        <body>
+          <h1>💬 Comment System</h1>
+
+          <div id="comment-form">
+            <h3>Add a Comment</h3>
+            <div class="form-group">
+              <label for="username">Username:</label>
+              <input type="text" id="username" placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+              <label for="comment">Comment:</label>
+              <textarea id="comment" rows="4" placeholder="Enter your comment"></textarea>
+            </div>
+            <button onclick="addComment()">Post Comment</button>
+          </div>
+
+          <div id="comments">
+            <h3>Comments</h3>
+            <div id="comments-list"></div>
+          </div>
+
+          <script>
+            // BUG: innerHTML renders HTML content directly
+            function displayComments(comments) {
+              const commentsList = document.getElementById('comments-list');
+              commentsList.innerHTML = '';
+
+              comments.forEach(comment => {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = 'comment';
+
+                // Problem: Direct HTML insertion without sanitization
+                commentDiv.innerHTML = `
+                  <div class="comment-header">${comment.username} - ${new Date(comment.timestamp).toLocaleString()}</div>
+                  <div class="comment-text">${comment.comment}</div>
+                `;
+
+                commentsList.appendChild(commentDiv);
+              });
+            }
+
+            async function addComment() {
+              const username = document.getElementById('username').value;
+              const comment = document.getElementById('comment').value;
+
+              if (!username || !comment) {
+                alert('Please fill in both fields');
+                return;
+              }
+
+              const response = await fetch('/api/comments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, comment })
+              });
+
+              if (response.ok) {
+                document.getElementById('username').value = '';
+                document.getElementById('comment').value = '';
+                loadComments();
+              }
+            }
+
+            async function loadComments() {
+              const response = await fetch('/api/comments');
+              const comments = await response.json();
+              displayComments(comments);
+            }
+
+            // Load comments on page load
+            loadComments();
+          </script>
+        </body>
+        </html>
+
+attack_vectors:
+  - payload: "<script>alert('XSS Attack!')</script>"
+    description: "Basic script injection that shows an alert"
+  - payload: "<img src=x onerror=alert('XSS')>"
+    description: "Image tag with onerror event handler"
+  - payload: "<iframe src='javascript:alert(\"XSS\")'></iframe>"
+    description: "Iframe with JavaScript URL"
+  - payload: "<svg onload=alert('XSS')>"
+    description: "SVG element with onload event"
+  - payload: "javascript:void(0)/*-/*`/*\\`/*'/*\"/**/(/* */onerror=alert('XSS') )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\\x3csVg/<sVg/oNloAd=alert('XSS')//\\x3e"
+    description: "Complex XSS payload that bypasses basic filters"
+
+hints:
+  - "Look at how user comments are being displayed in the HTML"
+  - "innerHTML treats content as HTML, which can execute scripts"
+  - "Consider using textContent instead of innerHTML for user-generated content"
+  - "Alternatively, sanitize HTML input before storing or displaying it"
+  - "Check both the server-side storage and client-side rendering"
+
+solution:
+  fixes:
+    - description: "Use textContent instead of innerHTML (Client-side fix)"
+      code: |
+        // Safe approach - treat content as text only
+        commentDiv.innerHTML = `
+          <div class="comment-header">${comment.username} - ${new Date(comment.timestamp).toLocaleString()}</div>
+          <div class="comment-text"></div>
+        `;
+        // Set text content safely
+        commentDiv.querySelector('.comment-text').textContent = comment.comment;
+
+    - description: "Server-side input sanitization"
+      code: |
+        const DOMPurify = require('isomorphic-dompurify');
+
+        app.post('/api/comments', (req, res) => {
+          const { username, comment } = req.body;
+
+          // Sanitize input on the server side
+          const sanitizedComment = {
+            id: Date.now(),
+            username: DOMPurify.sanitize(username),
+            comment: DOMPurify.sanitize(comment),
+            timestamp: new Date().toISOString()
+          };
+
+          comments.push(sanitizedComment);
+          res.json({ success: true, comment: sanitizedComment });
+        });
+
+    - description: "Add Content Security Policy"
+      code: |
+        app.use((req, res, next) => {
+          res.setHeader(
+            'Content-Security-Policy',
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+          );
+          next();
+        });
+
+validation:
+  security_checks:
+    - check: "no_innerHTML_with_user_content"
+      pattern: "innerHTML.*\\$\\{.*comment.*\\}"
+      message: "Don't use innerHTML with user-generated content"
+    - check: "uses_textContent_or_sanitization"
+      pattern: "textContent|DOMPurify\\.sanitize"
+      message: "Should use textContent or proper sanitization"
+    - check: "input_validation"
+      pattern: "sanitize|textContent|escapeHtml"
+      message: "Should sanitize or escape user input"
+
+test_cases:
+  - name: "Blocks script injection"
+    input: { username: "hacker", comment: "<script>alert('xss')</script>" }
+    expected_result: "script_not_executed"
+  - name: "Blocks image onerror"
+    input: { username: "attacker", comment: "<img src=x onerror=alert('xss')>" }
+    expected_result: "script_not_executed"
+  - name: "Allows safe content"
+    input: { username: "user", comment: "This is a normal comment" }
+    expected_result: "content_displayed_safely"
+
+references:
+  - title: "OWASP XSS Prevention Cheat Sheet"
+    url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+  - title: "CWE-79: Cross-site Scripting"
+    url: "https://cwe.mitre.org/data/definitions/79.html"
+  - title: "DOMPurify - HTML Sanitizer"
+    url: "https://github.com/cure53/DOMPurify"
+  - title: "Content Security Policy"
+    url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP"
+
+tags:
+  - xss
+  - stored-xss
+  - input-sanitization
+  - content-security-policy
+  - html-injection
+  - owasp-top-10

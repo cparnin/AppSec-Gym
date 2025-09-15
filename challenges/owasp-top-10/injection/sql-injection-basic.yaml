@@ -1,0 +1,124 @@
+id: sql-injection-basic
+title: "SQL Injection in Login System"
+category: injection
+difficulty: beginner
+owasp_category: A03
+description: "Fix a classic SQL injection vulnerability in a user authentication system"
+learning_objectives:
+  - Understand how SQL injection attacks work
+  - Learn to use parameterized queries
+  - Implement proper input validation
+  - Understand the principle of least privilege
+
+vulnerable_code:
+  language: javascript
+  framework: express
+  files:
+    - name: app.js
+      content: |
+        const express = require('express');
+        const mysql = require('mysql2');
+        const app = express();
+
+        const db = mysql.createConnection({
+          host: 'localhost',
+          user: 'root',
+          password: 'password',
+          database: 'userdb'
+        });
+
+        app.use(express.json());
+
+        // BUG: SQL Injection in login endpoint
+        app.post('/login', (req, res) => {
+          const { username, password } = req.body;
+
+          // Direct string concatenation - security issue
+          const query = `SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`;
+
+          db.query(query, (err, results) => {
+            if (err) {
+              return res.status(500).json({ error: 'Database error' });
+            }
+
+            if (results.length > 0) {
+              res.json({ success: true, user: results[0] });
+            } else {
+              res.status(401).json({ error: 'Invalid credentials' });
+            }
+          });
+        });
+
+        app.listen(3000, () => {
+          console.log('Server running on port 3000');
+        });
+
+attack_vectors:
+  - payload: "admin' OR '1'='1' --"
+    description: "Bypass authentication by always making the condition true"
+  - payload: "admin'; DROP TABLE users; --"
+    description: "SQL injection to drop the users table"
+  - payload: "' UNION SELECT username, password FROM admin_users --"
+    description: "Extract data from other tables"
+
+hints:
+  - "Look at how the username and password are being inserted into the SQL query"
+  - "String concatenation in SQL queries is dangerous - use parameterized queries instead"
+  - "Replace the template literals with ? placeholders and pass values as parameters"
+  - "Use db.query(query, [username, password], callback) instead of concatenation"
+
+solution:
+  fixes:
+    - description: "Use parameterized queries"
+      code: |
+        const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
+        db.query(query, [username, password], (err, results) => {
+          // ... rest of the code
+        });
+    - description: "Add input validation"
+      code: |
+        if (!username || !password || username.length > 50 || password.length > 100) {
+          return res.status(400).json({ error: 'Invalid input' });
+        }
+    - description: "Hash passwords (bonus)"
+      code: |
+        const bcrypt = require('bcrypt');
+        // In registration:
+        // const hashedPassword = await bcrypt.hash(password, 10);
+        // In login:
+        // const isValid = await bcrypt.compare(password, user.password);
+
+validation:
+  security_checks:
+    - check: "no_string_concatenation"
+      pattern: "SELECT.*\\+.*|SELECT.*\\$\\{.*\\}"
+      message: "SQL queries should not use string concatenation"
+    - check: "uses_parameterized_queries"
+      pattern: "\\?.*\\[.*\\]"
+      message: "Should use parameterized queries with ? placeholders"
+    - check: "input_validation"
+      pattern: "length.*>.*|typeof.*===.*string"
+      message: "Should include basic input validation"
+
+test_cases:
+  - name: "Blocks SQL injection attempt"
+    input: { username: "admin' OR '1'='1' --", password: "anything" }
+    expected_result: "authentication_failed"
+  - name: "Allows valid login"
+    input: { username: "testuser", password: "validpass" }
+    expected_result: "authentication_success"
+
+references:
+  - title: "OWASP SQL Injection Prevention Cheat Sheet"
+    url: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+  - title: "CWE-89: SQL Injection"
+    url: "https://cwe.mitre.org/data/definitions/89.html"
+  - title: "Node.js MySQL2 Documentation"
+    url: "https://www.npmjs.com/package/mysql2"
+
+tags:
+  - sql-injection
+  - parameterized-queries
+  - input-validation
+  - database-security
+  - owasp-top-10

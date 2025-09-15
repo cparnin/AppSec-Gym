@@ -1,0 +1,329 @@
+id: jwt-vulnerabilities
+title: "JWT Authentication Vulnerabilities"
+category: broken-auth
+difficulty: intermediate
+owasp_category: A02
+description: "Fix multiple critical vulnerabilities in JWT-based authentication system"
+learning_objectives:
+  - Understand JWT structure and security implications
+  - Learn about weak secrets and algorithm confusion attacks
+  - Implement proper token validation and expiration
+  - Understand secure session management
+
+vulnerable_code:
+  language: javascript
+  framework: express
+  files:
+    - name: auth.js
+      content: |
+        const jwt = require('jsonwebtoken');
+        const bcrypt = require('bcrypt');
+
+        // VULNERABILITY 1: Weak, hardcoded secret
+        const JWT_SECRET = 'secret123';
+
+        // VULNERABILITY 2: No algorithm specified (allows algorithm confusion)
+        // VULNERABILITY 3: Very long expiration time
+        function generateToken(user) {
+          return jwt.sign(
+            {
+              id: user.id,
+              username: user.username,
+              role: user.role,
+              // VULNERABILITY 4: Including sensitive data in token
+              password: user.password,
+              ssn: user.ssn
+            },
+            JWT_SECRET,
+            { expiresIn: '365d' } // 1 year expiration!
+          );
+        }
+
+        // VULNERABILITY 5: No proper verification
+        function verifyToken(token) {
+          try {
+            // Accepts any algorithm, vulnerable to algorithm confusion
+            return jwt.verify(token, JWT_SECRET);
+          } catch (error) {
+            return null;
+          }
+        }
+
+        // VULNERABILITY 6: Insecure password comparison
+        function validatePassword(inputPassword, storedPassword) {
+          // Direct string comparison instead of using bcrypt
+          return inputPassword === storedPassword;
+        }
+
+        // VULNERABILITY 7: No rate limiting or account lockout
+        async function login(username, password, users) {
+          const user = users.find(u => u.username === username);
+
+          if (!user) {
+            return { success: false, message: 'User not found' };
+          }
+
+          // Using insecure password validation
+          if (validatePassword(password, user.password)) {
+            const token = generateToken(user);
+            return {
+              success: true,
+              token,
+              user: {
+                id: user.id,
+                username: user.username,
+                role: user.role
+              }
+            };
+          }
+
+          return { success: false, message: 'Invalid password' };
+        }
+
+        module.exports = {
+          generateToken,
+          verifyToken,
+          validatePassword,
+          login
+        };
+
+    - name: server.js
+      content: |
+        const express = require('express');
+        const { login, verifyToken } = require('./auth');
+        const app = express();
+
+        app.use(express.json());
+
+        // Mock user database
+        const users = [
+          {
+            id: 1,
+            username: 'admin',
+            password: 'admin123', // VULNERABILITY: Plain text password
+            role: 'admin',
+            ssn: '123-45-6789'
+          },
+          {
+            id: 2,
+            username: 'user',
+            password: 'password',
+            role: 'user',
+            ssn: '987-65-4321'
+          }
+        ];
+
+        app.post('/login', async (req, res) => {
+          const { username, password } = req.body;
+
+          const result = await login(username, password, users);
+
+          if (result.success) {
+            res.json(result);
+          } else {
+            res.status(401).json(result);
+          }
+        });
+
+        // VULNERABILITY 8: No middleware to verify token properly
+        app.get('/profile', (req, res) => {
+          const token = req.headers.authorization?.replace('Bearer ', '');
+
+          if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
+          }
+
+          const decoded = verifyToken(token);
+
+          if (!decoded) {
+            return res.status(401).json({ error: 'Invalid token' });
+          }
+
+          // VULNERABILITY 9: Exposing sensitive data from token
+          res.json({
+            message: 'Profile data',
+            user: decoded // Contains password and SSN!
+          });
+        });
+
+        // VULNERABILITY 10: No proper authorization checks
+        app.get('/admin', (req, res) => {
+          const token = req.headers.authorization?.replace('Bearer ', '');
+          const decoded = verifyToken(token);
+
+          // Only checks if token exists, not the role
+          if (decoded) {
+            res.json({ message: 'Admin panel', data: 'Sensitive admin data' });
+          } else {
+            res.status(401).json({ error: 'Unauthorized' });
+          }
+        });
+
+        app.listen(3000, () => {
+          console.log('Server running on port 3000');
+        });
+
+attack_vectors:
+  - attack: "Algorithm Confusion Attack"
+    payload: "Change algorithm to 'none' and remove signature"
+    description: "Exploit missing algorithm validation to bypass signature verification"
+  - attack: "Weak Secret Brute Force"
+    payload: "Use tools like hashcat to crack 'secret123'"
+    description: "Brute force the weak JWT secret to forge tokens"
+  - attack: "Token Manipulation"
+    payload: "Modify role in JWT payload to gain admin access"
+    description: "Change user role in JWT to escalate privileges"
+  - attack: "Sensitive Data Exposure"
+    payload: "Decode JWT to extract passwords and SSNs"
+    description: "Extract sensitive information stored in JWT payload"
+
+hints:
+  - "The JWT secret is hardcoded and very weak - use a strong, random secret from environment variables"
+  - "Specify the algorithm explicitly when verifying tokens to prevent algorithm confusion attacks"
+  - "Never store sensitive data like passwords or SSNs in JWT tokens"
+  - "Use shorter expiration times and implement refresh tokens for better security"
+  - "Implement proper role-based authorization checks"
+  - "Hash passwords with bcrypt instead of storing them in plain text"
+  - "Add rate limiting and account lockout mechanisms"
+
+solution:
+  fixes:
+    - description: "Use strong secret from environment variables"
+      code: |
+        const JWT_SECRET = process.env.JWT_SECRET || require('crypto').randomBytes(64).toString('hex');
+        if (!process.env.JWT_SECRET) {
+          console.warn('Warning: Using generated JWT secret. Set JWT_SECRET environment variable.');
+        }
+
+    - description: "Specify algorithm and reduce expiration time"
+      code: |
+        function generateToken(user) {
+          return jwt.sign(
+            {
+              id: user.id,
+              username: user.username,
+              role: user.role
+              // Remove sensitive data like password and SSN
+            },
+            JWT_SECRET,
+            {
+              algorithm: 'HS256',
+              expiresIn: '15m' // Much shorter expiration
+            }
+          );
+        }
+
+    - description: "Proper token verification with algorithm specification"
+      code: |
+        function verifyToken(token) {
+          try {
+            return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+          } catch (error) {
+            return null;
+          }
+        }
+
+    - description: "Secure password handling"
+      code: |
+        const bcrypt = require('bcrypt');
+
+        async function hashPassword(password) {
+          return await bcrypt.hash(password, 12);
+        }
+
+        async function validatePassword(inputPassword, hashedPassword) {
+          return await bcrypt.compare(inputPassword, hashedPassword);
+        }
+
+    - description: "Proper authorization middleware"
+      code: |
+        function authenticateToken(req, res, next) {
+          const authHeader = req.headers['authorization'];
+          const token = authHeader && authHeader.split(' ')[1];
+
+          if (!token) {
+            return res.status(401).json({ error: 'Access token required' });
+          }
+
+          const decoded = verifyToken(token);
+          if (!decoded) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+          }
+
+          req.user = decoded;
+          next();
+        }
+
+        function requireRole(role) {
+          return (req, res, next) => {
+            if (req.user.role !== role) {
+              return res.status(403).json({ error: 'Insufficient permissions' });
+            }
+            next();
+          };
+        }
+
+    - description: "Rate limiting implementation"
+      code: |
+        const rateLimit = require('express-rate-limit');
+
+        const loginLimiter = rateLimit({
+          windowMs: 15 * 60 * 1000, // 15 minutes
+          max: 5, // Limit each IP to 5 requests per windowMs
+          message: 'Too many login attempts, please try again later',
+          standardHeaders: true,
+          legacyHeaders: false,
+        });
+
+        app.use('/login', loginLimiter);
+
+validation:
+  security_checks:
+    - check: "strong_jwt_secret"
+      pattern: "process\\.env\\.JWT_SECRET|crypto\\.randomBytes"
+      message: "Should use strong JWT secret from environment variables"
+    - check: "algorithm_specified"
+      pattern: "algorithms.*\\[.*HS256.*\\]"
+      message: "Should specify algorithm in JWT verification"
+    - check: "short_expiration"
+      pattern: "expiresIn.*['\"]\\d+[mh]['\"]"
+      message: "Should use shorter token expiration times"
+    - check: "no_sensitive_data_in_jwt"
+      pattern: "!(password|ssn).*jwt\\.sign"
+      message: "Should not include sensitive data in JWT payload"
+    - check: "bcrypt_usage"
+      pattern: "bcrypt\\.(hash|compare)"
+      message: "Should use bcrypt for password hashing"
+    - check: "role_based_auth"
+      pattern: "req\\.user\\.role|requireRole"
+      message: "Should implement proper role-based authorization"
+
+test_cases:
+  - name: "Rejects algorithm confusion attack"
+    input: { token: "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsInJvbGUiOiJhZG1pbiJ9." }
+    expected_result: "token_rejected"
+  - name: "Accepts valid token with proper algorithm"
+    input: { user: { id: 1, username: "admin", role: "admin" } }
+    expected_result: "token_accepted"
+  - name: "Token expires within reasonable time"
+    input: { check: "token_expiration" }
+    expected_result: "expires_within_1_hour"
+
+references:
+  - title: "OWASP JWT Security Cheat Sheet"
+    url: "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html"
+  - title: "RFC 7519 - JSON Web Token"
+    url: "https://tools.ietf.org/html/rfc7519"
+  - title: "JWT.io - JWT Debugger"
+    url: "https://jwt.io"
+  - title: "CWE-287: Authentication Bypass"
+    url: "https://cwe.mitre.org/data/definitions/287.html"
+
+tags:
+  - jwt
+  - authentication
+  - authorization
+  - weak-secrets
+  - algorithm-confusion
+  - session-management
+  - owasp-top-10
