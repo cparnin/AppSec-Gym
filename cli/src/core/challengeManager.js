@@ -63,7 +63,7 @@ class ChallengeManager {
         return a.title.localeCompare(b.title);
       });
 
-      console.log(`Loaded ${challenges.length} challenges`);
+      // Silently load challenges
     } catch (error) {
       console.warn('Failed to load challenges:', error.message);
       this.challenges = this.getFallbackChallenges();
@@ -383,7 +383,7 @@ module.exports = { createToken, verifyToken };`
         allContent
       );
 
-      // Generate comprehensive security report
+      // Generate security report
       const securityReport = this.securityValidator.generateSecurityReport(validationResults);
 
       if (validationResults.passed) {
