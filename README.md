@@ -100,14 +100,14 @@ Each challenge includes:
 
 ```
 appsec-gym/
-├── cli/           # Node.js CLI application (main package)
-├── challenges/    # Vulnerability challenges (community contributions welcome!)
-├── web/          # Optional web interface (future)
-├── docs/         # Documentation and guides
-└── README.md     # You are here
+├── cli/           # Node.js CLI application
+│   ├── src/       # Core application code
+│   ├── tests/     # Test suite
+│   └── configs/   # ESLint security configurations
+└── README.md      # You are here
 ```
 
-**Note**: The main application is in the `cli/` directory with its own package.json and dependencies.
+The main application is in the `cli/` directory with its own package.json and dependencies.
 
 ## License
 
